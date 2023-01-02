@@ -222,6 +222,7 @@ module.exports = class Reader extends Component {
     const { legacyMode, resolution, delay } = this.props;
     const { preview, canvas, img } = this.els;
 
+    if(!canvas || !preview) return;
     // Get image/video dimensions
     var width = Math.floor(
       legacyMode ? img?.naturalWidth : preview?.videoWidth ? preview.videoWidth : 0
