@@ -205,101 +205,126 @@ module.exports = class Reader extends Component {
     const { delay, onLoad } = this.props;
     const { mirrorVideo, streamLabel } = this.state;
     const preview = this.els.preview;
-    preview.play();
+    let playPromise = preview.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then((_) => {
+          // Automatic playback started!
+          if (typeof onLoad == "function") {
+            onLoad({ mirrorVideo, streamLabel });
+          }
 
-    if (typeof onLoad == "function") {
-      onLoad({ mirrorVideo, streamLabel });
+          if (typeof delay == "number") {
+            this.timeout = setTimeout(this.check, delay);
+          }
+
+          // Some browsers call loadstart continuously
+          preview.removeEventListener("loadstart", this.handleLoadStart);
+        })
+        .catch((error) => {
+          setTimeout(this.handleLoadStart, 1000);
+        });
     }
-
-    if (typeof delay == "number") {
-      this.timeout = setTimeout(this.check, delay);
-    }
-
-    // Some browsers call loadstart continuously
-    preview.removeEventListener("loadstart", this.handleLoadStart);
   }
+
   check() {
     const { legacyMode, resolution, delay } = this.props;
     const { preview, canvas, img } = this.els;
 
-    if(!canvas || !preview) return;
-    // Get image/video dimensions
-    var width = Math.floor(
-      legacyMode ? img?.naturalWidth : preview?.videoWidth ? preview.videoWidth : 0
-    );
-    var height = Math.floor(
-      legacyMode ? img?.naturalHeight : preview?.videoHeight ? preview.videoHeight : 0
-    );
+    try {
+      if (!canvas || !preview) return;
+      // Get image/video dimensions
+      var width = Math.floor(
+        legacyMode ? img?.naturalWidth : preview?.videoWidth ? preview.videoWidth : 0
+      );
+      var height = Math.floor(
+        legacyMode ? img?.naturalHeight : preview?.videoHeight ? preview.videoHeight : 0
+      );
 
-    // Canvas draw offsets
-    let hozOffset = 0;
-    let vertOffset = 0;
+      // Canvas draw offsets
+      let hozOffset = 0;
+      let vertOffset = 0;
 
-    // Scale image to correct resolution
-    if (legacyMode) {
-      // Keep image aspect ratio
-      const greatestSize = width > height ? width : height;
-      const ratio = resolution / greatestSize;
+      // Scale image to correct resolution
+      if (legacyMode) {
+        // Keep image aspect ratio
+        const greatestSize = width > height ? width : height;
+        const ratio = resolution / greatestSize;
 
-      height = ratio * height;
-      width = ratio * width;
+        height = ratio * height;
+        width = ratio * width;
 
-      canvas.width = width ? width : 0;
-      canvas.height = height ? height : 0;
-    } else {
-      // Crop image to fit 1:1 aspect ratio
-      const smallestSize = width < height ? width : height;
-      const ratio = resolution / smallestSize;
+        canvas.width = width ? width : 0;
+        canvas.height = height ? height : 0;
+      } else {
+        // Crop image to fit 1:1 aspect ratio
+        const smallestSize = width < height ? width : height;
+        const ratio = resolution / smallestSize;
 
-      height = ratio * height;
-      width = ratio * width;
+        height = ratio * height;
+        width = ratio * width;
 
-      vertOffset = ((height - resolution) / 2) * -1;
-      hozOffset = ((width - resolution) / 2) * -1;
+        vertOffset = ((height - resolution) / 2) * -1;
+        hozOffset = ((width - resolution) / 2) * -1;
 
-      canvas.width = resolution ? resolution : 0;
-      canvas.height = resolution ? resolution : 0;
-    }
+        canvas.width = resolution ? resolution : 0;
+        canvas.height = resolution ? resolution : 0;
+      }
 
-    const previewIsPlaying = preview && preview.readyState === preview.HAVE_ENOUGH_DATA;
+      const previewIsPlaying = preview && preview.readyState === preview.HAVE_ENOUGH_DATA;
 
-    if (legacyMode || previewIsPlaying) {
-      const ctx = canvas.getContext("2d");
+      if (legacyMode || previewIsPlaying) {
+        const ctx = canvas.getContext("2d");
 
-      ctx.drawImage(legacyMode ? img : preview, hozOffset, vertOffset, width, height);
+        ctx.drawImage(legacyMode ? img : preview, hozOffset, vertOffset, width, height);
 
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      // Send data to web-worker
-      this.worker.postMessage(imageData);
-    } else {
-      // Preview not ready -> check later
-      this.timeout = setTimeout(this.check, delay);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        // Send data to web-worker
+        this.worker.postMessage(imageData);
+      } else {
+        // Preview not ready -> check later
+        this.timeout = setTimeout(this.check, delay);
+      }
+    } catch (e) {
+      console.log(e);
     }
   }
   handleWorkerMessage(e) {
     const { onScan, legacyMode, delay } = this.props;
     const decoded = e.data;
-    onScan(decoded || null);
+    try {
+      onScan(decoded || null);
 
-    if (!legacyMode && typeof delay == "number" && this.worker) {
-      this.timeout = setTimeout(this.check, delay);
+      if (!legacyMode && typeof delay == "number" && this.worker) {
+        this.timeout = setTimeout(this.check, delay);
+      }
+    } catch (e) {
+      console.log(e);
     }
   }
   initiateLegacyMode() {
-    this.reader = new FileReader();
-    this.reader.addEventListener("load", this.handleReaderLoad);
-    this.els.img.addEventListener("load", this.check, false);
+    try {
+      this.reader = new FileReader();
+      this.reader.addEventListener("load", this.handleReaderLoad);
+      this.els.img.addEventListener("load", this.check, false);
 
-    // Reset componentDidUpdate
-    this.componentDidUpdate = undefined;
+      // Reset componentDidUpdate
+      this.componentDidUpdate = undefined;
 
-    if (typeof this.props.onLoad == "function") {
-      this.props.onLoad();
+      if (typeof this.props.onLoad == "function") {
+        this.props.onLoad();
+      }
+    } catch (e) {
+      console.log(e);
     }
   }
   handleInputChange(e) {
-    const selectedImg = e.target.files[0];
-    this.reader.readAsDataURL(selectedImg);
+    try {
+      const selectedImg = e.target.files[0];
+      this.reader.readAsDataURL(selectedImg);
+    } catch (e) {
+      console.log(e);
+    }
   }
   handleReaderLoad(e) {
     // Set selected image blob as img source
