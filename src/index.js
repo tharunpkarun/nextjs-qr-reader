@@ -222,7 +222,8 @@ module.exports = class Reader extends Component {
           preview.removeEventListener("loadstart", this.handleLoadStart);
         })
         .catch((error) => {
-          setTimeout(this.handleLoadStart, 1000);
+          // setTimeout(this.handleLoadStart, 1000);
+          preview.pause();
         });
     }
   }
