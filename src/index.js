@@ -220,6 +220,7 @@ module.exports = class Reader extends Component {
             }
             // Some browsers call loadstart continuously
             preview.removeEventListener("loadstart", this.handleLoadStart);
+            preview.pause();
           })
           .catch((error) => {
             // setTimeout(this.handleLoadStart, 1000);
