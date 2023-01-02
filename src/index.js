@@ -205,26 +205,36 @@ module.exports = class Reader extends Component {
     const { delay, onLoad } = this.props;
     const { mirrorVideo, streamLabel } = this.state;
     const preview = this.els.preview;
-    let playPromise = preview.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then((_) => {
-          // Automatic playback started!
-          if (typeof onLoad == "function") {
-            onLoad({ mirrorVideo, streamLabel });
-          }
-
-          if (typeof delay == "number") {
-            this.timeout = setTimeout(this.check, delay);
-          }
-
-          // Some browsers call loadstart continuously
-          preview.removeEventListener("loadstart", this.handleLoadStart);
-        })
-        .catch((error) => {
-          // setTimeout(this.handleLoadStart, 1000);
+    if (!preview) return;
+    try {
+      let playPromise = preview.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then((_) => {
+            // Automatic playback started!
+            if (typeof onLoad == "function") {
+              onLoad({ mirrorVideo, streamLabel });
+            }
+            if (typeof delay == "number") {
+              this.timeout = setTimeout(this.check, delay);
+            }
+            // Some browsers call loadstart continuously
+            preview.removeEventListener("loadstart", this.handleLoadStart);
+          })
+          .catch((error) => {
+            // setTimeout(this.handleLoadStart, 1000);
+            preview.pause();
+          });
+      }
+    } catch (e) {
+      console.log(e);
+      if (preview) {
+        try {
           preview.pause();
-        });
+        } catch (e) {
+          console.log(e);
+        }
+      }
     }
   }
 
