@@ -243,8 +243,8 @@ module.exports = class Reader extends Component {
       height = ratio * height;
       width = ratio * width;
 
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = width ? width : 0;
+      canvas.height = height ? height : 0;
     } else {
       // Crop image to fit 1:1 aspect ratio
       const smallestSize = width < height ? width : height;
@@ -256,8 +256,8 @@ module.exports = class Reader extends Component {
       vertOffset = ((height - resolution) / 2) * -1;
       hozOffset = ((width - resolution) / 2) * -1;
 
-      canvas.width = resolution;
-      canvas.height = resolution;
+      canvas.width = resolution ? resolution : 0;
+      canvas.height = resolution ? resolution : 0;
     }
 
     const previewIsPlaying = preview && preview.readyState === preview.HAVE_ENOUGH_DATA;
